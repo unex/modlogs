@@ -20,7 +20,7 @@ from aioauth_client import DiscordClient
 from models import LogEntry, Guild, DiscordUser, User
 # from discord import Discord
 
-MONGO_URI = os.environ.get("MONGO_URI")
+CONNECTION_URI = os.environ.get("CONNECTION_URI")
 
 DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
 DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID")
@@ -37,7 +37,7 @@ templates = Jinja2Templates(directory="templates")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 
-mongo = AsyncIOMotorClient(MONGO_URI)
+mongo = AsyncIOMotorClient(CONNECTION_URI)
 db = mongo.modmail_bot
 logs: Collection = db.logs
 users: Collection = db.users
