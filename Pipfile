@@ -13,6 +13,7 @@ discord-markdown = "*"
 aiohttp = "*"
 aioauth-client = "*"
 itsdangerous = "*"
+gunicorn = "*"
 
 [dev-packages]
 
