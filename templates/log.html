@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+    <div class="card my-3">
+        <div class="card-body">
+            Created thread with
+
+            <span class="font-weight-bold">{{ entry.recipient.fullname }}</span>
+            {% if entry.recipient.mod %}
+            <span class="badge badge-primary">Mod</span>
+            {% endif %}
+
+            on
+
+            {{ entry.created_at.strftime('%Y/%m/%d %H:%M') }}
+        </div>
+    </div>
+
+    <hr>
+    {% for message in entry.messages %}
+    <div class="card message my-3">
+        <div class="card-body">
+            <div class="row align-items-center mb-3">
+                <div class="col col-md-auto">
+                    <img class="avatar rounded-circle" src="{{ message.author.avatar_url }}?size=8"/>
+                </div>
+                <div class="col px-0">
+                    <span class="font-weight-bold">{{ message.author.fullname }}</span>
+                    {% if message.author.mod %}
+                    <span class="badge badge-primary">Mod</span>
+                    {% endif %}
+                    {% if message.type != 'thread_message' %}
+                    <span class="badge badge-warning">{{ message.type.upper() }}</span>
+                    {% endif %}
+                </div>
+                <div class="col col-md-auto">
+                    <small>{{ message.timestamp.strftime('%Y/%m/%d %H:%M') }}</small>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    {{ message.content_html|safe }}
+                    {% if message.attachments %}
+                    {% for attachment in message.attachments %}
+                        {% if attachment.is_image %}
+                        <img class="img-fluid" src="{{ attachment.url }}?size=100"/>
+                        {% endif %}
+                        <a href="{{ attachment.url }}" target="_blank">{{ attachment.filename }}</a>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <hr>
+
+    <div class="card my-3">
+        <div class="card-body">
+            <span class="font-weight-bold">{{ entry.closer.fullname }}</span>
+            {% if entry.closer.mod %}
+            <span class="badge badge-primary">Mod</span>
+            {% endif %}
+
+            Closed thread on
+
+            {{ entry.closed_at.strftime('%Y/%m/%d %H:%M') }}
+        </div>
+    </div>
+</div>
+{% endblock %}

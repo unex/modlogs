@@ -1,0 +1,29 @@
+body {
+    min-height: 100vh;
+}
+
+nav.navbar {
+    background: black;
+}
+
+#content {
+    min-height: calc(100vh - 96px);
+}
+
+.avatar {
+    height: 32px;
+}
+
+footer {
+    background: #D81B60;
+}
+
+footer a, footer a:hover {
+    color: #FFFFFF;
+}
+
+#footer-logo svg {
+    display: block;
+    height: 36px;
+    fill: currentColor;
+}

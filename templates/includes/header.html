@@ -1,0 +1,23 @@
+<nav class="navbar navbar-expand navbar-dark">
+    <dic class="container">
+        <a href="{{url_for('root')}}" class="navbar-brand p-0">ModLogs</a>
+
+        <div class="navbar-collapse collapse">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item dropdown">
+                    {% if user %}
+                    <a class="nav-link dropdown-toggle d-none d-sm-inline-block" href="#" data-toggle="dropdown">
+                        <img src="{{user.avatar_url}}" class="avatar img-fluid rounded-circle mr-1" alt="{{user.fullname}}">
+                        <span>{{user.fullname}}</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="{{url_for('logout')}}">Sign out</a>
+                    </div>
+                    {% else %}
+                    <a href="{{url_for('login')}}" class="btn btn-primary">Login</a>
+                    {% endif %}
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
