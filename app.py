@@ -1,6 +1,7 @@
 import os
 import traceback
 from secrets import token_urlsafe
+from urllib.parse import urljoin
 
 from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.staticfiles import StaticFiles
@@ -26,7 +27,7 @@ DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
 DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID")
 DISCORD_CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET")
 
-REDIRECT_URI_BASE = os.environ.get("REDIRECT_URI_BASE")
+LOG_URL = os.environ.get("LOG_URL")
 SECRET_KEY = os.environ.get('SECRET_KEY', 'this_should_be_configured')
 SERIALIZER = URLSafeSerializer(SECRET_KEY)
 
@@ -89,7 +90,7 @@ async def root(request: Request, user = Depends(auth)):
 async def login(request: Request, code: str = None, state: str = None, error: str = None):
     if not code:
         state = token_urlsafe()
-        auth_url = make_discord_session().get_authorize_url(scope='identify guilds', redirect_uri=REDIRECT_URI_BASE + request.url.path, state=state)
+        auth_url = make_discord_session().get_authorize_url(scope='identify guilds', redirect_uri=urljoin(LOG_URL, request.url.path), state=state)
         request.session['oauth2_state'] = state
         return RedirectResponse(auth_url)
 
@@ -110,7 +111,7 @@ async def login(request: Request, code: str = None, state: str = None, error: st
     discord = make_discord_session()
 
     try:
-        await discord.get_access_token(code, redirect_uri=REDIRECT_URI_BASE + request.url.path)
+        await discord.get_access_token(code, redirect_uri=urljoin(LOG_URL, request.url.path))
 
     except Exception as e:
         traceback.print_exc()
