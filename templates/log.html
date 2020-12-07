@@ -59,25 +59,14 @@
 
     <div class="card my-3">
         <div class="card-body">
-            <div class="row mb-3">
-                <div class="col">
-                    <span class="font-weight-bold">{{ entry.closer.fullname }}</span>
-                    {% if entry.closer.mod %}
-                    <span class="badge badge-primary">Mod</span>
-                    {% endif %}
+            <span class="font-weight-bold">{{ entry.closer.fullname }}</span>
+            {% if entry.closer.mod %}
+            <span class="badge badge-primary">Mod</span>
+            {% endif %}
 
-                    Closed thread on
+            Closed thread on
 
-                    {{ entry.closed_at.strftime('%Y/%m/%d %H:%M') }}
-                </div>
-            </div>
-            <div class="row">
-                <div class="col">
-                    {% if entry.close_message %}
-                    <p>{{ entry.close_message }}</p>
-                    {% endif %}
-                </div>
-            </div>
+            {{ entry.closed_at.strftime('%Y/%m/%d %H:%M') }}
         </div>
     </div>
 </div>
