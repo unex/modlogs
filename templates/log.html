@@ -60,14 +60,29 @@
     {% if not entry.open %}
     <div class="card my-3">
         <div class="card-body">
-            <span class="font-weight-bold">{{ entry.closer.fullname }}</span>
-            {% if entry.closer.mod %}
-            <span class="badge badge-primary">Mod</span>
+            <div class="row align-items-center">
+                <div class="col col-md-auto">
+                    <img class="avatar rounded-circle" src="{{ entry.closer.avatar_url }}?size=8"/>
+                </div>
+                <div class="col px-0">
+                    <span class="font-weight-bold">{{ entry.closer.fullname }}</span>
+                    {% if entry.closer.mod %}
+                    <span class="badge badge-primary">Mod</span>
+                    {% endif %}
+
+                    <span>Closed thread</span>
+                </div>
+                <div class="col col-md-auto">
+                    <small>{{ entry.closed_at.strftime('%Y/%m/%d %H:%M') }}</small>
+                </div>
+            </div>
+            {% if entry.close_message %}
+            <div class="row mt-3">
+                <div class="col">
+                    {{ entry.close_message_html|safe }}
+                </div>
+            </div>
             {% endif %}
-
-            Closed thread on
-
-            {{ entry.closed_at.strftime('%Y/%m/%d %H:%M') }}
         </div>
     </div>
     {% endif %}

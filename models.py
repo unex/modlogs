@@ -17,10 +17,15 @@ class LogEntry(BaseModel):
     creator: "LogUser"
     closer: Optional["LogUser"] = None
     messages: List["Message"] = []
+    close_message: Optional[str]
 
     @property
     def closed(self):
         return self.closed_at is not None
+
+    @property
+    def close_message_html(self) -> str:
+        return convert_to_html(self.close_message)
 
 
 
