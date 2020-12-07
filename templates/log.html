@@ -57,6 +57,7 @@
 
     <hr>
 
+    {% if not entry.open %}
     <div class="card my-3">
         <div class="card-body">
             <span class="font-weight-bold">{{ entry.closer.fullname }}</span>
@@ -69,5 +70,6 @@
             {{ entry.closed_at.strftime('%Y/%m/%d %H:%M') }}
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}
