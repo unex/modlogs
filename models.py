@@ -4,6 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from discord_markdown.discord_markdown import convert_to_html
 
+
 class LogEntry(BaseModel):
     _id: str
     key: str
@@ -28,7 +29,6 @@ class LogEntry(BaseModel):
         return convert_to_html(self.close_message)
 
 
-
 class LogUser(BaseModel):
     id: int
     name: str
@@ -38,7 +38,7 @@ class LogUser(BaseModel):
 
     @property
     def fullname(self) -> str:
-        return f'{self.name}#{self.discriminator}'
+        return f"{self.name}#{self.discriminator}"
 
 
 class Message(BaseModel):
@@ -68,6 +68,7 @@ Message.update_forward_refs()
 
 # Discord
 
+
 class DiscordUser(BaseModel):
     id: int
     username: str
@@ -76,7 +77,7 @@ class DiscordUser(BaseModel):
 
     @property
     def fullname(self) -> str:
-        return f'{self.username}#{self.discriminator}'
+        return f"{self.username}#{self.discriminator}"
 
 
 class Guild(BaseModel):
@@ -88,9 +89,10 @@ class Guild(BaseModel):
 
 # DB
 
+
 class User(DiscordUser):
     guilds: List[int]
 
     @property
     def avatar_url(self):
-        return f'https://cdn.discordapp.com/avatars/{self.id}/{self.avatar}.png'
+        return f"https://cdn.discordapp.com/avatars/{self.id}/{self.avatar}.png"
