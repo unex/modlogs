@@ -21,4 +21,5 @@ gunicorn = "*"
 python_version = "3.8"
 
 [scripts]
-web = "uvicorn app:app --reload"
+dev = "uvicorn app:app --reload"
+prod = "exec gunicorn -b 0.0.0.0:8000 -w 4 -k uvicorn.workers.UvicornH11Worker app:app"

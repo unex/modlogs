@@ -10,4 +10,4 @@ EXPOSE 8000
 RUN pip install pipenv
 RUN pipenv install --system --deploy
 
-CMD ["./start.sh"]
+CMD ["pipenv", "run", "prod"]
