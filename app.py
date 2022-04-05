@@ -166,7 +166,9 @@ async def login(
 @app.get("/logout")
 async def logout(request: Request):
     request.session.clear()
-    return "goodbye"
+    return templates.TemplateResponse(
+        "page.html", {"request": request, "content": "goodbye"}
+    )
 
 
 @app.get("/logs/{key}")
