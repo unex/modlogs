@@ -19,7 +19,6 @@ from bson.objectid import ObjectId
 from aioauth_client import DiscordClient
 
 from models import LogEntry, Guild, DiscordUser, User
-# from discord import Discord
 
 CONNECTION_URI = os.environ.get("CONNECTION_URI")
 
@@ -43,7 +42,6 @@ db = mongo.modmail_bot
 logs: Collection = db.logs
 users: Collection = db.users
 
-# discord = Discord(DISCORD_TOKEN)
 
 
 def make_discord_session(access_token=None) -> DiscordClient:
