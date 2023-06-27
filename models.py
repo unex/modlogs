@@ -38,6 +38,9 @@ class LogUser(BaseModel):
 
     @property
     def fullname(self) -> str:
+        if self.discriminator == '0':
+            return self.name
+
         return f"{self.name}#{self.discriminator}"
 
 
@@ -74,9 +77,13 @@ class DiscordUser(BaseModel):
     username: str
     avatar: str
     discriminator: str
+    global_name: str
 
     @property
     def fullname(self) -> str:
+        if self.discriminator == '0':
+            return self.username
+
         return f"{self.username}#{self.discriminator}"
 
 
