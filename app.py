@@ -22,7 +22,6 @@ from models import LogEntry, Guild, DiscordUser, User
 
 CONNECTION_URI = os.environ.get("CONNECTION_URI")
 
-DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
 DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID")
 DISCORD_CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET")
 
