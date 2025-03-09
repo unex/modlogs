@@ -2,6 +2,7 @@ import os
 import traceback
 from secrets import token_urlsafe
 from urllib.parse import urljoin
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.staticfiles import StaticFiles
@@ -18,7 +19,7 @@ from bson.objectid import ObjectId
 
 from aioauth_client import DiscordClient
 
-from models import LogEntry, Guild, DiscordUser, User
+from models import LogEntry, Config, Guild, CacheGuild, GuildMember, DiscordUser, User
 
 CONNECTION_URI = os.environ.get("CONNECTION_URI")
 
@@ -29,17 +30,29 @@ LOG_URL = os.environ.get("LOG_URL")
 SECRET_KEY = os.environ.get("SECRET_KEY", "this_should_be_configured")
 SERIALIZER = URLSafeSerializer(SECRET_KEY)
 
-app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
-
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-
 
 mongo = AsyncIOMotorClient(CONNECTION_URI)
 db = mongo.modmail_bot
 logs: Collection = db.logs
 users: Collection = db.users
+config: Collection = db.config
+cache: Collection = db.plugins.Cache
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await mongo.admin.command("ismaster")
+
+    yield
+
+    mongo.close()
+
+
+app = FastAPI(lifespan=lifespan)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 
 def make_discord_session(access_token=None) -> DiscordClient:
@@ -59,7 +72,7 @@ async def auth(request: Request):
         if user := await db.users.find_one(
             {"_id": ObjectId(SERIALIZER.loads(request.session["user"]))}
         ):
-            return User.parse_obj(user)
+            return User.model_validate(user)
 
     raise RequiresAuth(status_code=status.HTTP_401_UNAUTHORIZED)
 
@@ -70,27 +83,73 @@ async def no_user_exception_handler(request: Request, exc: Exception):
     return RedirectResponse(request.url_for("login"))
 
 
-@app.on_event("startup")
-async def create_db_client():
-    await mongo.admin.command("ismaster")
-
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    await mongo.close()
-
-
 @app.get("/")
 async def root(request: Request, user=Depends(auth)):
+    cached = { doc["id"] : CacheGuild(**doc) async for doc in cache.find({"id": {"$in": list(map(int, user.guilds))}}) }
     doc = (
         await logs.find({"guild_id": {"$in": list(map(str, user.guilds))}})
         .sort([("created_at", -1)])
         .to_list(100)
     )
-    entries = [LogEntry.parse_obj(x) for x in doc]
+    entries = [LogEntry(**{**x, "guild": cached[int(x["guild_id"])]}) for x in doc]
     return templates.TemplateResponse(
         "home.html", {"request": request, "user": user, "entries": entries}
     )
+
+
+async def get_authorized_guilds(discord):
+    guilds = [ Guild.model_validate(obj) for obj in await discord.request("GET", "users/@me/guilds") ]
+    cached = { doc["id"] : CacheGuild(**doc) async for doc in cache.find({"id": {"$in": [g.id for g in guilds]}}) }
+
+    if not cached:
+        return
+
+    member_data = [ await discord.request("GET", f"users/@me/guilds/{g_id}/member") for g_id in cached ]
+    member = [ GuildMember.model_validate(m) for m in member_data if not m.get("message") ]
+    configs = [ Config(**doc) async for doc in config.find() ]
+
+    if not member:
+        return
+
+    user = member[0].user
+
+    user_check = set()
+    for m in member:
+        user_check.update(m.roles)
+
+    user_check.add(user.id)
+
+    allowed_bots = set()
+
+    for g in guilds:
+        if g.id not in cached.keys():
+            continue
+
+        for c in configs:
+            if not c.bot_id in cached[g.id].bot_ids:
+                continue
+
+            if user_check & set(c.oauth_whitelist) \
+                    or user_check & set(map(int, c.level_permissions.get("OWNER", []))) \
+                    or user_check & set(map(int, c.level_permissions.get("MODERATOR", []))) \
+                    or g.permissions & 32: # manage guild
+
+                allowed_bots.add(c.bot_id)
+
+    allowed_guilds = set()
+
+    for _,g in cached.items():
+        if allowed_bots & set(g.bot_ids):
+            allowed_guilds.add(g.id)
+
+    doc = await users.find_one_and_update(
+        {"id": user.id},
+        {"$set": {**user.model_dump(), **{"guilds": list(allowed_guilds)}}},
+        upsert=True,
+        return_document=ReturnDocument.AFTER,
+    )
+
+    return doc
 
 
 @app.get("/login")
@@ -100,7 +159,7 @@ async def login(
     if not code:
         state = token_urlsafe()
         auth_url = make_discord_session().get_authorize_url(
-            scope="identify guilds",
+            scope="identify guilds guilds.members.read",
             redirect_uri=urljoin(LOG_URL, request.url.path),
             state=state,
         )
@@ -134,31 +193,21 @@ async def login(
             detail=f"There was an error authenticating with discord: {e}",
         )
 
-    user = DiscordUser.parse_obj(await discord.request("GET", "users/@me"))
-    guilds = [
-        Guild.parse_obj(obj)
-        for obj in await discord.request("GET", "users/@me/guilds")
-        if int(obj.get("permissions")) & 32
-    ]
+    doc = await get_authorized_guilds(discord)
 
-    log_guilds = list(map(int, await logs.distinct("guild_id")))
-
-    if not any(x.id in log_guilds for x in guilds):
+    if not doc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"You do not have access to modlogs in any guilds",
         )
 
-    doc = await users.find_one_and_update(
-        {"id": user.id},
-        {"$set": {**user.dict(), **{"guilds": [guild.id for guild in guilds]}}},
-        upsert=True,
-        return_document=ReturnDocument.AFTER,
-    )
-
     request.session["user"] = SERIALIZER.dumps(str(doc.get("_id")))
 
-    target = SERIALIZER.loads(request.session.get("goto")) or app.url_path_for("root")
+    if goto := request.session.get("goto"):
+        target = SERIALIZER.loads(goto)
+    else:
+        target = app.url_path_for("root")
+
     return RedirectResponse(target)
 
 
@@ -172,8 +221,9 @@ async def logout(request: Request):
 
 @app.get("/logs/{key}")
 async def log_page(request: Request, key: str, user=Depends(auth)):
+    cached = { doc["id"] : CacheGuild(**doc) async for doc in cache.find({"id": {"$in": list(map(int, user.guilds))}}) }
     doc = await logs.find_one({"key": key})
-    entry = LogEntry.parse_obj(doc)
+    entry = LogEntry(**{**doc, "guild": cached[int(doc["guild_id"])]})
 
     if entry.guild_id not in user.guilds:
         raise HTTPException(

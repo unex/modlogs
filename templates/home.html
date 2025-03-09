@@ -18,8 +18,8 @@
                     {% for entry in entries %}
                     <tr>
                         <td><a href="{{ url_for('log_page', key=entry.key) }}">{{ entry.key }}</a></td>
-                        <td>{{ entry.recipient.fullname }}</td>
-                        <td>{{ entry.guild_id }}</td>
+                        <td><img class="rounded-circle mr-2" src={{entry.recipient.avatar_url}}?size=22>{{ entry.recipient.fullname }}</td>
+                        <td><img class="rounded-circle mr-2" src={{entry.guild.icon_url}}?size=22>{{ entry.guild.name }}</td>
                         <td>{{ entry.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
                         <td>{{ entry.closed }}</td>
                     </tr>
